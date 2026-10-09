@@ -1,39 +1,51 @@
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from typing import Optional
+
 
 
 class TodoItem(BaseModel):
-    """Модель отдельной задачи (для обновления или вложенности)"""
     item: str = Field(..., description="Текст задачи")
 
     class Config:
         schema_extra = {
             "example": {
-                "item": "Завершить практическую работу №2"
+                "item": "Изучить модели ответов и HTTPException в FastAPI"
             }
         }
-        json_schema_extra = {
-            "example": {
-                "item": "Завершить практическую работу №2"
-            }
-        }
-
+        json_schema_extra = schema_extra
 
 class Todo(BaseModel):
-    """Основная модель задачи с идентификатором"""
-    id: int = Field(..., description="Уникальный идентификатор задачи", gt=0)
-    item: str = Field(..., description="Описание задачи")
+    id: int = Field(..., gt=0, description="Уникальный идентификатор задачи")
+    item: str = Field(..., description="Текст задачи")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "item": "Сдать практическую работу по FastAPI"
+            }
+        }
+        json_schema_extra = json_schema_extra
+
+
+class TodoItems(BaseModel):
+    developer: str = Field(default="Студент (Разработчик)", description="Имя разработчика")
+    todos: List[TodoItem]
 
     class Config:
         schema_extra = {
             "example": {
-                "id": 1,
-                "item": "Изучать"
+                "developer": "Михаил",
+                "todos": [
+                    {"item": "Первая задача"},
+                    {"item": "Вторая задача"}
+                ]
             }
         }
-        json_schema_extra = {
-            "example": {
-                "id": 1,
-                "item": "Изучать"
-            }
-        }
+        json_schema_extra = schema_extra
+
+
+class MessageResponse(BaseModel):
+    status: str
+    developer: str
+    message: str

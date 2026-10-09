@@ -2,18 +2,19 @@ from fastapi import FastAPI
 from todo import todo_router
 
 app = FastAPI(
-    title="Todo API — Практическое занятие №2",
-    description="",
-    version="alphabetamega"
+    title="Практическая работа: CRUD-приложение, модели ответов и обработка ошибок",
+    description="Демонстрация работы с APIRouter, response_model, HTTPException и кастомными кодами статуса.",
+    version="2.0.0"
 )
 
-# Корневой маршрут с персонализацией
 @app.get("/", tags=["Главная"])
-async def welcome() -> dict:
+async def root():
     return {
-        "message": "Добро пожаловать в сервис управления задачами!",
-        "author": "Студент",
-        "docs_url": "/docs"
+        "project": "FastAPI CRUD Service",
+        "developer": "Иванов Иван",
+        "docs_url": "/docs",
+        "redoc_url": "/redoc"
     }
 
+# Подключение маршрутизатора
 app.include_router(todo_router)
