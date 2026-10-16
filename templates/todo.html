@@ -1,0 +1,43 @@
+{% extends "home.html" %}
+
+{% block title %}{% if todo is defined %}Задача №{{ todo.id }}{% else %}Все задачи{% endif %}{% endblock %}
+
+{% block todo_container %}
+<section class="card card-body mb-4">
+    <h2 class="h5">Добавить задачу</h2>
+    {# Явный action работает и на странице отдельной задачи. #}
+    <form method="post" action="{{ url_for('add_todo') }}">
+        <label class="form-label" for="item">Текст задачи</label>
+        <div class="input-group">
+            <input class="form-control" id="item" name="item" type="text"
+                   placeholder="Например: изучить шаблоны Jinja2" required>
+            <button class="btn btn-primary" type="submit">Добавить</button>
+        </div>
+    </form>
+</section>
+
+{% if todo is defined %}
+<article class="card card-body">
+    <h2 class="h4">Задача №{{ todo.id }}</h2>
+    <p class="text-break">{{ todo.item }}</p>
+    <a href="{{ url_for('retrieve_todos') }}">Вернуться к списку</a>
+</article>
+{% else %}
+<section>
+    <h2 class="h4">Все задачи <span class="badge bg-secondary">{{ todos | length }}</span></h2>
+    {% if todos %}
+    <ul class="list-group mt-3">
+        {% for task in todos %}
+        <li class="list-group-item text-break">
+            {{ loop.index }}.
+            <a href="{{ url_for('get_single_todo', todo_id=task.id) }}">{{ task.item }}</a>
+            <small class="text-secondary">(ID: {{ task.id }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="alert alert-info mt-3">Задач пока нет. Добавьте первую через форму выше.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,66 +1,50 @@
-from fastapi import APIRouter, Path, HTTPException, status
+from pathlib import Path as FilePath
 from typing import List
-from model import Todo, TodoItem, TodoItems, MessageResponse
 
-todo_router = APIRouter(prefix="/todo", tags=["Управление задачами (Todo CRUD)"])
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
+from model import MessageResponse, Todo, TodoItem
+
+
+todo_router = APIRouter(prefix="/todo", tags=["Управление задачами"])
 todo_list: List[Todo] = []
-
 DEVELOPER_NAME = "MikeyKknv"
 
+# Абсолютный путь позволяет находить шаблоны независимо от рабочей папки.
+templates = Jinja2Templates(directory=str(FilePath(__file__).resolve().parent / "templates"))
 
-@todo_router.post(
-    "",
-    status_code=status.HTTP_201_CREATED,
-    response_model=MessageResponse,
-    summary="Добавить новую задачу"
-)
-async def add_todo(todo: Todo):
 
-    for existing_todo in todo_list:
-        if existing_todo.id == todo.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"[{DEVELOPER_NAME}] Ошибка: задача с ID {todo.id} уже зарегистрирована в системе."
-            )
+@todo_router.post("", response_class=HTMLResponse, summary="Добавить задачу из формы")
+async def add_todo(request: Request, todo: Todo = Depends(Todo.as_form)):
+    todo.id = max((task.id for task in todo_list), default=0) + 1
     todo_list.append(todo)
-    return MessageResponse(
-        status="success",
-        developer=DEVELOPER_NAME,
-        message=f"Задача #{todo.id} успешно добавлена разработчиком {DEVELOPER_NAME}."
+    # После отправки формы открываем GET: обновление страницы не повторит POST.
+    return RedirectResponse(url=request.url_for("retrieve_todos"), status_code=303)
+
+
+@todo_router.get("", response_class=HTMLResponse, summary="Показать список задач")
+async def retrieve_todos(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="todo.html",
+        context={"todos": todo_list, "developer": DEVELOPER_NAME},
     )
 
 
-@todo_router.get(
-    "",
-    response_model=TodoItems,
-    status_code=status.HTTP_200_OK,
-    summary="Получить список задач (только текст без ID)"
-)
-async def retrieve_todos():
-    return TodoItems(
-        developer=DEVELOPER_NAME,
-        todos=[TodoItem(item=t.item) for t in todo_list]
-    )
-
-
-@todo_router.get(
-    "/{todo_id}",
-    status_code=status.HTTP_200_OK,
-    summary="Получить задачу по ID"
-)
-async def get_single_todo(
-    todo_id: int = Path(..., title="ID задачи", description="Идентификатор задачи", gt=0)
-) -> dict:
+@todo_router.get("/{todo_id}", response_class=HTMLResponse, summary="Показать задачу")
+async def get_single_todo(request: Request, todo_id: int = Path(..., gt=0)):
     for todo in todo_list:
         if todo.id == todo_id:
-            return {
-                "developer": DEVELOPER_NAME,
-                "todo": todo
-            }
+            return templates.TemplateResponse(
+                request=request,
+                name="todo.html",
+                context={"todo": todo, "developer": DEVELOPER_NAME},
+            )
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"[{DEVELOPER_NAME}] Задача с идентификатором {todo_id} не найдена."
+        detail=f"[{DEVELOPER_NAME}] Задача с идентификатором {todo_id} не найдена.",
     )
 
 

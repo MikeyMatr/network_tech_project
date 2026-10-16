@@ -1,48 +1,29 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
 
+from fastapi import Form, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TodoItem(BaseModel):
-    item: str = Field(..., description="Текст задачи")
+    model_config = ConfigDict(str_strip_whitespace=True)
+    item: str = Field(..., min_length=1, description="Текст задачи")
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "item": "Изучить модели ответов и HTTPException в FastAPI"
-            }
-        }
-        json_schema_extra = schema_extra
 
-class Todo(BaseModel):
-    id: int = Field(..., gt=0, description="Уникальный идентификатор задачи")
-    item: str = Field(..., description="Текст задачи")
+class Todo(TodoItem):
+    # Форма не передаёт ID: маршрутизатор назначает его перед сохранением.
+    id: Optional[int] = Field(default=None, gt=0, description="Идентификатор задачи")
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "id": 1,
-                "item": "Сдать практическую работу по FastAPI"
-            }
-        }
-        json_schema_extra = json_schema_extra
+    @classmethod
+    def as_form(cls, item: str = Form(..., min_length=1)):
+        item = item.strip()
+        if not item:
+            raise HTTPException(status_code=422, detail="Текст задачи не должен быть пустым")
+        return cls(item=item)
 
 
 class TodoItems(BaseModel):
-    developer: str = Field(default="Студент (Разработчик)", description="Имя разработчика")
+    developer: str = "MikeyKknv"
     todos: List[TodoItem]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "developer": "Михаил",
-                "todos": [
-                    {"item": "Первая задача"},
-                    {"item": "Вторая задача"}
-                ]
-            }
-        }
-        json_schema_extra = schema_extra
 
 
 class MessageResponse(BaseModel):
