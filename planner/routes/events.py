@@ -49,3 +49,21 @@ async def delete_event(id: int) -> dict:
 async def delete_all_events() -> dict:
     events.clear()
     return {"message": "Events deleted successfully"}
+
+
+@event_router.put('/{id}')
+async def update_event(id: int, body: Event = Body(...)) -> dict:
+    for index, event in enumerate(events):
+        if event.id == id:
+            if body.id != id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Event ID cannot be changed"
+                )
+            events[index] = body
+            return {"message": "Event updated successfully"}
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Event with supplied ID does not exist"
+    )
