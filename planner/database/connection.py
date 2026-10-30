@@ -1,8 +1,7 @@
 from pathlib import Path
-
 from sqlmodel import SQLModel, Session, create_engine
-
 from models.events import Event
+from models.users import UserAccount
 
 
 database_file = Path(__file__).resolve().parent.parent / "planner.db"

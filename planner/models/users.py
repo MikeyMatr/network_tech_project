@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from models.events import Event
+from sqlmodel import SQLModel, Field as SQLField
 
 
 class User(BaseModel):
@@ -29,3 +30,9 @@ class UserSignIn(BaseModel):
             "password": "strong!!!"
         }
     })
+
+
+class UserAccount(SQLModel, table=True):
+    id: int | None = SQLField(default=None, primary_key=True)
+    email: str = SQLField(unique=True, index=True)
+    password_hash: str
