@@ -1,69 +1,114 @@
-from fastapi import APIRouter, Body, HTTPException, status
-from models.events import Event
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session, select
+
+from database.connection import get_session
+from models.events import Event, EventCreate, EventUpdate
+
 
 event_router = APIRouter(tags=["Events"])
-events = []
 
 
 @event_router.get("/", response_model=list[Event])
-async def retrieve_all_events() -> list[Event]:
-    return events
+def retrieve_all_events(
+    session: Session = Depends(get_session),
+):
+    return session.exec(
+        select(Event).order_by(Event.id)
+    ).all()
 
 
 @event_router.get("/{id}", response_model=Event)
-async def retrieve_event(id: int) -> Event:
-    for event in events:
-        if event.id == id:
-            return event
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Event with supplied ID does not exist"
-    )
+def retrieve_event(
+    id: int,
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, id)
+
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found",
+        )
+
+    return event
 
 
-@event_router.post("/new")
-async def create_event(body: Event = Body(...)) -> dict:
-    for event in events:
-        if event.id == body.id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Event with supplied ID already exists"
-            )
-    events.append(body)
-    return {"message": "Event created successfully"}
+@event_router.post(
+    "/new",
+    response_model=Event,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_event(
+    body: EventCreate,
+    session: Session = Depends(get_session),
+):
+    event = Event.model_validate(body)
+
+    session.add(event)
+    session.commit()
+    session.refresh(event)
+
+    return event
+
+
+@event_router.put("/{id}", response_model=Event)
+def update_event(
+    id: int,
+    body: EventUpdate,
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, id)
+
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found",
+        )
+
+    changes = body.model_dump(exclude_unset=True)
+
+    if any(value is None for value in changes.values()):
+        raise HTTPException(
+            status_code=422,
+            detail="Fields cannot be null",
+        )
+
+    for field, value in changes.items():
+        setattr(event, field, value)
+
+    session.add(event)
+    session.commit()
+    session.refresh(event)
+
+    return event
 
 
 @event_router.delete("/{id}")
-async def delete_event(id: int) -> dict:
-    for event in events:
-        if event.id == id:
-            events.remove(event)
-            return {"message": "Event deleted successfully"}
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Event with supplied ID does not exist"
-    )
+def delete_event(
+    id: int,
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, id)
+
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found",
+        )
+
+    session.delete(event)
+    session.commit()
+
+    return {"message": "Event deleted successfully"}
 
 
 @event_router.delete("/")
-async def delete_all_events() -> dict:
-    events.clear()
+def delete_all_events(
+    session: Session = Depends(get_session),
+):
+    for event in session.exec(select(Event)).all():
+        session.delete(event)
+
+    session.commit()
+
     return {"message": "Events deleted successfully"}
-
-
-@event_router.put('/{id}')
-async def update_event(id: int, body: Event = Body(...)) -> dict:
-    for index, event in enumerate(events):
-        if event.id == id:
-            if body.id != id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Event ID cannot be changed"
-                )
-            events[index] = body
-            return {"message": "Event updated successfully"}
-
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Event with supplied ID does not exist"
-    )
