@@ -1,0 +1,56 @@
+# Виртуальные окружения
+venv/
+.venv/
+env/
+
+# Кеш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Локальные базы SQLite и служебные файлы
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Переменные окружения и секреты
+.env
+.env.*
+!.env.example
+
+# Настройки редакторов
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Логи
+*.log
+
+# Кеш тестов и инструментов
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Сборка и метаданные Python-пакетов
+build/
+dist/
+*.egg-info/
