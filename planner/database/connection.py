@@ -1,5 +1,8 @@
 from pathlib import Path
+
+from sqlalchemy import event as sqlalchemy_event
 from sqlmodel import SQLModel, Session, create_engine
+
 from models.events import Event
 from models.users import UserAccount
 
@@ -11,6 +14,13 @@ engine = create_engine(
     echo=True,
     connect_args={"check_same_thread": False},
 )
+
+
+@sqlalchemy_event.listens_for(engine, "connect")
+def enable_foreign_keys(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 def conn():

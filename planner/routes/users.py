@@ -46,7 +46,12 @@ def sign_new_user(
             detail="User with supplied email exists",
         )
 
-    return {"message": "User successfully registered!"}
+    session.refresh(account)
+
+    return {
+        "message": "User successfully registered!",
+        "user_id": account.id,
+    }
 
 
 @user_router.post("/signin")

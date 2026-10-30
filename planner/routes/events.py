@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-
+from models.users import UserAccount
 from database.connection import get_session
 from models.events import Event, EventCreate, EventUpdate
 
@@ -42,6 +42,14 @@ def create_event(
     body: EventCreate,
     session: Session = Depends(get_session),
 ):
+    user = session.get(UserAccount, body.user_id)
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
     event = Event.model_validate(body)
 
     session.add(event)
@@ -112,3 +120,4 @@ def delete_all_events(
     session.commit()
 
     return {"message": "Events deleted successfully"}
+
